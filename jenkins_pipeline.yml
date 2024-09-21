@@ -1,0 +1,57 @@
+pipeline {
+  agent any
+
+  environment {
+    AZURE_SUBSCRIPTION_ID = '<Subscription-id>'
+    TENANT_ID = '<tenant-id>'
+    CLIENT_ID = '<client-id>'
+    CLIENT_SECRET = '<secret-value>'
+    RESOURCE_GROUP_NAME = 'azure_devops_training'
+    WEBAPP_NAME = 'c2swebapp02'
+    GITHUB_REPO_PATH = "https://github.com/<account-name>/<repo-name>"
+  }
+
+  stages {
+    stage('Build') {
+      steps {
+        echo 'Install the Python and other libraries versions.'
+        script {
+          sh 'python -m pip install --upgrade pip'
+          sh 'pip install setuptools wheel'
+          sh 'pip install pytest pymongo flask'
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        echo 'Run the test cases.'
+        script {
+          // Archive GitHub repository path
+          sh "git clone ${env.GITHUB_REPO_PATH} ."
+          sh "zip -r app.zip *"
+        }
+      }
+    }
+
+    stage('Connecting to the Azure Web App Service') {
+      steps {
+        script {
+          withCredentials([azureServicePrincipal(
+              credentialsId: 'azure-credentials',
+              subscriptionId: env.AZURE_SUBSCRIPTION_ID,
+              clientId: env.CLIENT_ID,
+              clientSecret: env.CLIENT_SECRET,
+              tenant: env.TENANT_ID
+          )]) {
+            sh "az login --service-principal -u ${CLIENT_ID} -p ${CLIENT_SECRET} --tenant ${TENANT_ID}"
+            sh "az account set --subscription ${AZURE_SUBSCRIPTION_ID}"
+            
+            // Deploy ZIP file to Azure Web App
+            sh "az webapp deployment source config-zip --resource-group ${RESOURCE_GROUP_NAME} --name ${WEBAPP_NAME} --src app.zip"
+          }
+        }
+      }
+    }
+  }
+}

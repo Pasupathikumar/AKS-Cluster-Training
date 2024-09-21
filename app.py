@@ -10,8 +10,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def connect_to_mongodb():
-    username = 'pasupathikumar819'
-    password = 'MSpk@819'  # Your actual password here
+    username = '<Mongodv-username>'
+    password = '<Mongodv-password>'  # Your actual password here
     # Encode username and password using quote_plus
     encoded_username = quote_plus(username)
     encoded_password = quote_plus(password)
