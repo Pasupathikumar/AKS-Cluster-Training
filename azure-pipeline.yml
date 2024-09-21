@@ -1,0 +1,35 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+    addToPath: true
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install setuptools wheel
+    pip install pytest pymongo flask
+  displayName: 'Install dependencies'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+    replaceExistingArchive: true
+
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: 'aks-service-connection'
+    appName: 'c2swebapp02'
+    deployToSlotOrASE: true
+    resourceGroupName: 'azure_devops_training'
+    slotName: 'production'
+    package: '$(Build.ArtifactStagingDirectory)/app.zip'
+    runtimeStack: 'PYTHON|3.10'
